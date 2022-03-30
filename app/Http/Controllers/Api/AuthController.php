@@ -5,72 +5,56 @@ namespace App\Http\Controllers\Api;
 use App\Models\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AuthRequest;
+use App\Http\Requests\Admin\LoginRequest;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(AuthRequest $request)
     {
-        $fields = $request->validate([
-            'name'     => 'required|string',
-            'email'    => 'required|string|unique:admins,email',
-            'password' => 'required|string|min:5|max:13',
-            'phone'    => 'required|string',
-            'birthday' => 'required|string',
+        $admin = Admin::create([
+            'name'     => $request['name'],
+            'email'    => $request['email'],
+            'phone'    => $request['phone'],
+            'birthday' => $request['birthday'],
+            'avatar'   => 1,
+            'password' => Hash::make($request['password']),
         ]);
-        $admin = admin::create([
-            'name'  => $fields['name'],
-            'email' => $fields['email'],
-            'phone' => $fields['phone'],
-            'birthday' => $fields['birthday'],
-            'avatar' => 1,
-            'password' => Hash::make($fields['password']),
-        ]);
-        $token = $admin->createToken('myapptoken')->plainTextToken;
+        $token = $admin->createToken('authToken')->plainTextToken;
         $response = [
             'admin' => $admin,
             'token' => $token,
         ];
-
         return response($response, 201);
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $fields = $request->validate([
-            'email'    => 'required|string',
-            'password' => 'required|string|min:5|max:13',
-        ]);
+        $email    = $request['email'];
+        $password = $request['password'];
+        $admin = Admin::where('email', $email)->first();
 
-        $email = $fields['email'];
-        $password = $fields['password'];
+        $remember_token = $request;
 
-        $admin =  Admin::where('email', $email)->first();
-        if ($admin) {
-            if (Hash::check($password, $admin->password)) {
-                $request->Session()->put('AdminId', $admin->id);
-                return response()->json([
-                    'admin'   => $admin,
-                    'code'    => 200,
-                    'message' => 'đăng nhập thành công',
-                ]);
-            } else {
-                return back()->with('fail', 'thông tin đăng nhập không đúng');
-            }
-        } else {
-            return back()->with('fail', 'this is not register');
+        if (!$admin || !Hash::check($password, $admin->password)) {
+            return null;
         }
-    }
 
-    public function logout()
+        $token =  $admin->createToken('authToken')->plainTextToken;
+
+        return [
+            'data' => $admin,
+            'access_token' => $token,
+        ];
+   
+    }
+    public function logout(Request $request)
     {
-        if (Session::has('AdminId'))
-        {
-            
-        }
+        $request->user()->currentAccessToken()->delete();
+        return response()->json('Successfully logged out');
     }
-    
-
 }
