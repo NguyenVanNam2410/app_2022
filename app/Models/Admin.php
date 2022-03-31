@@ -16,6 +16,9 @@ class Admin extends Authenticatable
         'name',
         'email', 
         'password',
+        'phone', 
+        'birthday', 
+        'avatar',  
     ];
     /**
      * The attributes that should be hidden for arrays.
@@ -24,10 +27,7 @@ class Admin extends Authenticatable
      */
     protected $hidden = [
         'password',
-         'remember_token',
-        'phone', 
-        'birthday', 
-        'avatar',  
+        'remember_token', 
     ];
 
 }

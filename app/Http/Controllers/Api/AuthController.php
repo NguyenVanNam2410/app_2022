@@ -10,7 +10,7 @@ use App\Http\Requests\Admin\LoginRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -36,9 +36,21 @@ class AuthController extends Controller
     {
         $email    = $request['email'];
         $password = $request['password'];
-        $admin = Admin::where('email', $email)->first();
 
-        $remember_token = $request;
+        $remember_token = $request->has('remember_token') ?  true : false;
+
+        // $admin = Admin::create([
+        //     'remember_token' => Str::Random(60),
+        // ]);
+        
+        if (Auth::guard('admin')->attempt([
+            'email'    => $email,
+            'password' => $password
+        ], $remember_token ))
+        {
+            $user = auth()->user();
+        }
+        $admin = Admin::where('email', $email)->first();
 
         if (!$admin || !Hash::check($password, $admin->password)) {
             return null;
@@ -50,7 +62,6 @@ class AuthController extends Controller
             'data' => $admin,
             'access_token' => $token,
         ];
-   
     }
     public function logout(Request $request)
     {
